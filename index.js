@@ -1,3 +1,5 @@
+#!/usr/bin/node
+
 const fs = require('fs');
 const path = require('path');
 
@@ -33,7 +35,9 @@ function readDirectories(dirPath) {
   });
 }
 
-const directoryPath = process.env.npm_config_directory;
+const directoryPath = process.env.npm_config_directory || './';
+
+console.log('%c%s', 'color: #00a3cc', directoryPath);
 
 readDirectories(directoryPath)
   .then((directories) => {
