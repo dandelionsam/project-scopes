@@ -1,0 +1,16 @@
+{
+  "name": "project-scopes",
+  "version": "1.0.0",
+  "description": "Simple package which generates a scopes file for your commit messages",
+  "main": "index.js",
+  "scripts": {
+    "scopes": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Simone Aiello",
+  "license": "ISC",
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7"
+  }
+}
