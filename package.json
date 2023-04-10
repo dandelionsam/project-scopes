@@ -1,6 +1,6 @@
 {
   "name": "project-scopes",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Simple package which generates a scopes file for your commit messages",
   "keywords": [
     "repository",
