@@ -4,32 +4,37 @@ const fs = require('fs');
 const path = require('path');
 const argv = require('minimist')(process.argv.slice(2));
 
-const directoryPath = argv['directory'] || process.env.npm_config_directory;
-const generateMarkdown = argv['markdown'] ? true : process.env.npm_config_markdown;
+const srcFolder = argv['search'] || 'src';
+const dirPath = argv['directory'] || process.env.npm_config_directory || './';
+const genMd = argv['markdown'] ? true : process.env.npm_config_markdown;
 
 function readDirectories(dirPath) {
-  // Restituisce una promise che risolve con l'elenco delle cartelle di primo livello
   return new Promise((resolve, reject) => {
-    // Cerca la cartella "src"
-    const srcPath = path.join(dirPath, 'src');
+    const srcPath = path.join(dirPath, srcFolder);
 
-    console.log('Cartella root del progetto: %c%s', 'color: #00a3cc', directoryPath);
-    console.log('Cartella per la ricerca: %c%s', 'color: #aa00ff', srcPath);
+    if (dirPath instanceof Array) {
+      const completePath = dirPath.split('/');
+      console.log('Root del progetto:', ...completePath.slice(-1));
+    } else {
+      const completePath = process.cwd().split('/');
+      console.log('Root del progetto:', ...completePath.slice(-1));
+    }
 
+    // Verifico se la cartella ricercata ha i permessi in lettura
     fs.access(srcPath, fs.constants.F_OK, (err) => {
       if (err) {
         reject(new Error('\nLa cartella non è stata trovata.'));
         return;
       }
 
-      // Leggi il contenuto della cartella "src"
+      // Leggo il contenuto della cartella ricercata
       fs.readdir(srcPath, (err, files) => {
         if (err) {
           reject(err);
           return;
         }
 
-        // Filtra solo le cartelle di primo livello all'interno della cartella "src"
+        // Filtro solo le cartelle di primo livello all'interno della cartella ricercata
         const directories = files.filter((file) => {
           const filePath = path.join(srcPath, file);
           return fs.statSync(filePath).isDirectory();
@@ -43,7 +48,7 @@ function readDirectories(dirPath) {
 }
 
 function generateMarkdownFile(dir, directories) {
-  const markdownContent = `# Elenco delle cartelle nella cartella "src"\n\n${directories.join('\n')}`;
+  const markdownContent = `# Elenco delle cartelle di primo livello in ${srcFolder} \n\n ${directories.join('\n')}`;
   const markdownFilePath = path.join(dir, 'SCOPES.md');
 
   fs.writeFile(markdownFilePath, markdownContent, (err) => {
@@ -55,11 +60,13 @@ function generateMarkdownFile(dir, directories) {
   });
 }
 
-readDirectories(directoryPath)
+readDirectories(dirPath)
   .then((directories) => {
-    console.log('Elenco delle cartelle di primo livello nella in src:');
-    console.log(directories);
-    if (generateMarkdown) generateMarkdownFile(directoryPath, directories);
+    console.log(`Elenco delle cartelle di primo livello in ${srcFolder}:`);
+    directories.forEach((dir) => {
+      console.log(` - ${dir}`);
+    });
+    if (genMd) generateMarkdownFile(dirPath, directories);
   })
   .catch((err) => {
     console.error(err);
