@@ -3,15 +3,21 @@
 const fs = require('fs');
 const path = require('path');
 
+const directoryPath = process.env.npm_config_directory || './';
+const generateMarkdown = process.env.npm_config_markdown || false;
+
 function readDirectories(dirPath) {
   // Restituisce una promise che risolve con l'elenco delle cartelle di primo livello
   return new Promise((resolve, reject) => {
     // Cerca la cartella "src"
     const srcPath = path.join(dirPath, 'src');
 
+    console.log('Cartella root del progetto: \t\t %c%s', 'color: #00a3cc', directoryPath);
+    console.log('Cartella per la ricerca: \t %c%s \n', 'color: #aa00ff', srcPath);
+
     fs.access(srcPath, fs.constants.F_OK, (err) => {
       if (err) {
-        reject(new Error('Cartella "src" non trovata.'));
+        reject(new Error('\nLa cartella non è stata trovata.'));
         return;
       }
 
@@ -35,29 +41,25 @@ function readDirectories(dirPath) {
   });
 }
 
-const directoryPath = process.env.npm_config_directory || './';
-
-console.log('%c%s', 'color: #00a3cc', directoryPath);
-
-readDirectories(directoryPath)
-  .then((directories) => {
-    console.log('Elenco delle cartelle di primo livello nella cartella "src":');
-    console.log(directories);
-    generateMarkdownFile(directoryPath, directories);
-  })
-  .catch((err) => {
-    console.error('Errore durante la lettura delle cartelle:', err);
-  });
-
-function generateMarkdownFile(dirPath, directories) {
+function generateMarkdownFile(path, directories) {
   const markdownContent = `# Elenco delle cartelle nella cartella "src"\n\n${directories.join('\n')}`;
-  const markdownFilePath = path.join(dirPath, 'SCOPES.md');
+  const markdownFilePath = path.join(path, 'SCOPES.md');
 
   fs.writeFile(markdownFilePath, markdownContent, (err) => {
     if (err) {
-      console.error('Errore durante la generazione del file markdown:', err);
+      console.error('Errore durante la generazione del file markdown');
     } else {
-      console.log(`File markdown generato con successo: ${markdownFilePath}`);
+      console.log(`File markdown generato con successo in: ${markdownFilePath}`);
     }
   });
 }
+
+readDirectories(directoryPath)
+  .then((directories) => {
+    console.log('Elenco delle cartelle di primo livello nella in src:');
+    console.log(directories);
+    if (generateMarkdown) generateMarkdownFile(directoryPath, directories);
+  })
+  .catch((err) => {
+    console.error(err);
+  });
