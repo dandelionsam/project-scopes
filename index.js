@@ -1,38 +1,39 @@
 #!/usr/bin/env node
 
+const LABELS = require('./labels');
 const fs = require('fs');
 const path = require('path');
 const argv = require('minimist')(process.argv.slice(2));
 
-const srcFolder = argv['search'] || 'src';
+const srcFolder = argv['search'] || './';
+const mdFileName = argv['name'] || 'SCOPES.md';
 const dirPath = argv['directory'] || process.env.npm_config_directory || './';
 const genMd = argv['markdown'] ? true : process.env.npm_config_markdown;
 
+// Command arguments
+// console.log('args', argv);
+
 function readDirectories(dirPath) {
   return new Promise((resolve, reject) => {
-    const srcPath = path.join(dirPath, srcFolder);
+    const srcPath = path.join(dirPath, srcFolder !== './' ? srcFolder : '');
 
     if (dirPath instanceof Array) {
       const completePath = dirPath.split('/');
-      console.log('Root del progetto:', ...completePath.slice(-1));
+      console.log(LABELS.PROJECT_ROOT, ...completePath.slice(-1));
+      console.log(LABELS.READING_FROM, srcFolder);
     } else {
       const completePath = process.cwd().split('/');
-      console.log('Root del progetto:', ...completePath.slice(-1));
+      console.log(LABELS.PROJECT_ROOT, ...completePath.slice(-1));
+      console.log(LABELS.READING_FROM, srcFolder);
     }
 
     // Verifico se la cartella ricercata ha i permessi in lettura
     fs.access(srcPath, fs.constants.F_OK, (err) => {
-      if (err) {
-        reject(new Error('\nLa cartella non è stata trovata.'));
-        return;
-      }
+      if (err) return reject(new Error(LABELS.DIR_NOT_FOUND));
 
       // Leggo il contenuto della cartella ricercata
       fs.readdir(srcPath, (err, files) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+        if (err) return reject(err);
 
         // Filtro solo le cartelle di primo livello all'interno della cartella ricercata
         const directories = files.filter((file) => {
@@ -40,29 +41,36 @@ function readDirectories(dirPath) {
           return fs.statSync(filePath).isDirectory();
         });
 
-        // Risolvi la Promise con l'elenco delle cartelle
-        resolve(directories);
+        // Escludo le cartelle nascoste del progetto (come .git o node_modules)
+        // TODO: exclusion patterns or some folders
+        const firstLevelDirs = directories.filter((dir) => {
+          return dir !== 'node_modules' && dir !== 'vendor' && dir.charAt(0) !== '.';
+        });
+
+        resolve(firstLevelDirs);
       });
     });
   });
 }
 
 function generateMarkdownFile(dir, directories) {
-  const markdownContent = `# Elenco delle cartelle di primo livello in ${srcFolder} \n\n ${directories.join('\n')}`;
-  const markdownFilePath = path.join(dir, 'SCOPES.md');
+  const markdownContent = `# List of project scopes
+  } \n\n ${directories.join('\n')}`;
+
+  const markdownFilePath = path.join(dir, mdFileName);
 
   fs.writeFile(markdownFilePath, markdownContent, (err) => {
     if (err) {
-      console.error('Errore durante la generazione del file markdown');
+      console.error(LABELS.MARKDOWN_GEN_ERROR);
     } else {
-      console.log(`File markdown generato con successo in: ${markdownFilePath}`);
+      console.log(`${LABELS.MARKDOWN_GEN_SUCCESS} ${markdownFilePath}`);
     }
   });
 }
 
 readDirectories(dirPath)
   .then((directories) => {
-    console.log(`Elenco delle cartelle di primo livello in ${srcFolder}:`);
+    console.log(LABELS.FOLDER_LIST);
     directories.forEach((dir) => {
       console.log(` - ${dir}`);
     });
